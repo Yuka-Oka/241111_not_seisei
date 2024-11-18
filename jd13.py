@@ -1,17 +1,6 @@
 # 2024/11/11
 # cd Library/Mobile\ Documents/com~apple~CloudDocs/stream241003_jd
 
-# 会話履歴を残す（session_satte'chat_history'）
-
-# 外部ファイルに入力と出力を記録
-# やり取りをダウンロード可能
-
-# ラジオボタンで解説のレベルを変更（手動）
-
-# 最新のチャットを一番上に表示
-
-# 時刻を表示したい
-
 import openai
 ############ requirements.txt ############
 # openai==0.28
@@ -80,8 +69,6 @@ if 'input_history' not in st.session_state:
 if "down_log" not in st.session_state:
     st.session_state.down_log = []
 
-# ユーザーネーム、時刻、プロンプトを記録する用のlist
-
 # テキストエリアを表示
 user_name = st.sidebar.text_area("名前を入力してください（仮名でいいよ）")
 
@@ -137,8 +124,8 @@ st.sidebar.markdown(
         margin-top: 5px;  /* ここで改行の幅を指定 */
     }
     </style>
-    <p class="small-text">解説が表示されたら、</p>
-    <p class="small-text">ファイル名の右の x ボタンを押してください</p>
+    <p class="small-text">ファイル名の右の x ボタンを押してから①へ</p>
+    
     """,
     unsafe_allow_html=True
 )
@@ -147,6 +134,8 @@ st.sidebar.markdown(
 # 引数　error_code: コード＋エラー文、prom: システムへのプロンプト
 # 返り値　full_response: 生成した解説
 def response_generation(error_code, prom):
+    print("gpt")
+
     # systemプロンプト
     print("self_sys_prompt:")
     print(prom)
@@ -170,6 +159,7 @@ def response_generation(error_code, prom):
 
 # 関数response_generation：実験用解説生成、api使用なし
 def response_generation_dummy(error_code, prom):
+    print("response_generation_dummy")
     # systemプロンプト
     print("self_sys_prompt:")
     print(prom)
@@ -191,6 +181,8 @@ def append_to_file(text, file_path):
 # 引数java_code_d（ファイルの中身そのまま）, string_data_d_j（ファイルの中身string化）
 # 返り値java_code_d（コード＋エラー文）、sys_response_d（コンパイル結果を元にした解説結果）
 def file_jdoo(java_code_d, string_data_d_j):
+    print("JDoodle")
+
     # 応答履歴格納用変数
     sys_response_d = ""
 
@@ -240,6 +232,7 @@ def file_jdoo(java_code_d, string_data_d_j):
 # 返り値nyuryoku（ファイルの中身＋ダミー結果）
 # 返り値sys_response_d（コンパイル結果を元にした解説結果、ではなくダミーの文言）
 def file_jdoo_dummy(java_code_d, string_data_d_j):
+    print("file_jdoo_dummy")
     # 応答履歴格納用変数
     sys_response_d = "jdoodle節約したいからコンパイルしませんの"
     java_code_d += sys_response_d
@@ -253,11 +246,15 @@ def file_jdoo_dummy(java_code_d, string_data_d_j):
 # 関数file_check: ファイルの中身をチェック、同じだったら警告
 def file_check(java_code_d):
     if java_code_d in st.session_state.input_history:
-        st.warning("過去にも同じファイルが入力されましたよ")
+        tf = True
+        # st.warning("過去にも同じファイルが入力されましたよ")
     else:
-        st.success("ファイルがアップロードされました")
+        tf = False
+        # st.success("新しいファイルがアップロードされました")
 
     st.session_state.input_history.append(java_code_d)
+
+    return tf
 
 # 関数prom_hyouzi: 選択したプロンプトに対応するボタン名を取得
 # 引数self_sys_prompt_d: その時のself_sys_prompt_d
@@ -279,6 +276,7 @@ def safe_filename(input_string):
     # 使用できない文字を置換（例：スラッシュやコロンをアンダースコアに置換）
     return re.sub(r'[<>:"/\\|?*\x00-\x1F]', '_', input_string)
 
+samesame = ""
 # アップロードされたファイルをjdoodleでjavac
 if uploaded_file:
     # 日本のタイムゾーンを取得
@@ -289,25 +287,45 @@ if uploaded_file:
     java_code = uploaded_file.read().decode("utf-8")
 
     # ファイルの中身をチェック
-    # file_check(java_code)
+    che = file_check(java_code)
 
-    # 応答履歴格納用変数
-    sys_response = ""
+    if (che):
+        print("お　な　じ　フ　ァ　イ　ル")
 
-    # ユーザーの入力格納
-    user_nyuryoku = ""
+        stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+        string_data = stringio.read()
 
-    stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
-    string_data = stringio.read()
+        # プロンプトに対応するボタン名取得
+        ppp = prom_hyouzi(self_sys_prompt)
 
-    # プロンプトに対応するボタン名取得
-    ppp = prom_hyouzi(self_sys_prompt)
+        user_nyuryoku = st.session_state.code_compile
+        st.session_state.code_compile += "プログラムのエラーを説明してください"
+        sys_response = response_generation_dummy(st.session_state.code_compile, self_sys_prompt)
+        # sys_response = response_generation(st.session_state.code_compile, self_sys_prompt)
+        print(st.session_state.code_compile)
+        
+    else:
 
-    # javacして、解説生成
-    # user_nyuryoku, sys_response = file_jdoo(java_code, string_data)
+        stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+        string_data = stringio.read()
 
-    # javacしない、解説も生成しない
-    user_nyuryoku, sys_response = file_jdoo_dummy(java_code, string_data)
+        # プロンプトに対応するボタン名取得
+        ppp = prom_hyouzi(self_sys_prompt)
+
+        # 応答履歴格納用変数
+        sys_response = ""
+
+        # ユーザーの入力格納
+        user_nyuryoku = ""
+
+        # javacして、解説生成
+        # user_nyuryoku, sys_response = file_jdoo(java_code, string_data)
+
+        # javacしない、解説も生成しない
+        user_nyuryoku, sys_response = file_jdoo_dummy(java_code, string_data)
+
+        st.session_state.code_compile = user_nyuryoku
+
     temp = "ユーザー名: " + user_name + "\n使用日時　: " + japan_time_str + "\n使用ボタン: " + ppp + "\n"
     user_nyuryoku =  temp + user_nyuryoku
 
@@ -383,3 +401,5 @@ for message in reversed(st.session_state.chat_history):
         else:
             st.write(message["content"])
             st.write("----------------------------")
+
+    
