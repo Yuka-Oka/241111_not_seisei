@@ -1,5 +1,5 @@
-# 2024/11/11
-# cd Library/Mobile\ Documents/com~apple~CloudDocs/stream241003_jd
+# jd16
+# 応答生成なし
 
 import openai
 ############ requirements.txt ############
